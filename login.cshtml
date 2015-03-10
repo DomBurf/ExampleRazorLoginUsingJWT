@@ -1,0 +1,123 @@
+﻿@{
+    string logonHeader = "Logon";
+    string debuggingmessage = "";
+
+    if (IsPost)
+    {
+        string userstring = @Request.Form["username"];
+        string passwordstring = @Request.Form["password"];
+        this.LoginButtonClick(userstring, passwordstring);
+    }
+}
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>@logonHeader</title>
+</head>
+    <body>
+        @functions
+        {
+
+            /// <summary>
+            /// Logon click event handler
+            /// </summary>
+            /// <param name="usernameparam">Username</param>
+            /// <param name="passwordparam">Password</param>
+            public void LoginButtonClick(string usernameparam, string passwordparam)
+            {
+                if (this.AuthenticateUser(usernameparam, usernameparam))
+                {
+                    string token = this.CreateAuthenticationToken(usernameparam);
+                    string returnUrl = @Request.QueryString["returnUrl"];
+                    string redirectUrl = string.Format("{0}?jwt={1}", returnUrl, token);
+                    this.Response.Redirect(redirectUrl);
+                }
+            }
+
+            /// <summary>
+            /// This is a simple example. In a production environment this function would
+            /// invoke the necessary infrastructure API to authenticate the user's credentials.
+            /// </summary>
+            /// <param name="usernameparam">Username</param>
+            /// <param name="passwordparam">Password</param>
+            /// <returns>True if the user is authenticated, otherwise false</returns>
+            private bool AuthenticateUser(string usernameparam, string passwordparam)
+            {
+                return !string.IsNullOrEmpty(usernameparam) && !string.IsNullOrEmpty(passwordparam); 
+            }
+
+            /// <summary>
+            /// Creates the JSON Web Token (JWT) that allows communication between this application and MSM.
+            /// </summary>
+            /// <returns></returns>
+            private string CreateAuthenticationToken(string usernameparam)
+            {
+                TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
+                int timestamp = (int)t.TotalSeconds;
+
+                var payload = new Dictionary<string, object>
+                { 
+                    { "iat", timestamp },
+                    { "jti", Guid.NewGuid().ToString() },
+                    { "name", usernameparam }, 
+                    { "sharedkey", this.SharedKey }
+                };
+
+                //The token can only be decoded by MSM if the shared key specified here
+                //matches the shared key that has been configured in MSM System Settings
+                string token = JWT.JsonWebToken.Encode(payload, SharedKey, JWT.JwtHashAlgorithm.HS256);
+                return token;
+            }
+
+            /// <summary>
+            /// This is a simple example. In a production environment this function would
+            /// invoke the necessary infrastructure API to log the user off.
+            /// </summary>
+            /// <param name="usernameparam">Name of the user we are logging off</param>
+            private void LogUserOff(string usernameparam)
+            {
+                if (!string.IsNullOrEmpty(usernameparam))
+                {
+                    //log user off
+                }
+            }
+
+            //The private key that is required to encode the web token.
+            //This key is known only to MSM and this application and allows the web token to be passed 
+            //over the querystring.
+            //This key MUST be exactly the same as the one that is configured in MSM!
+            private string SharedKey
+            {
+                get
+                {
+                    return "123456";
+                }
+            }
+
+        }
+        <form id="formAuthenticate" runat="server" method="POST">
+            <p>@debuggingmessage</p>
+            <div id="innerLogOnBox" runat="server">
+                <h1><label runat="server">@logonHeader</label></h1>
+                <fieldset id="logonControls" runat="server" visible="true">
+                    <span>
+                        <label for="username">Username</label>
+                        <input name="username" type="text" autocomplete="off" width="150px"></input>
+                    </span>
+                    <span>
+                        <label for="password">Password</label>
+                        <input name="password" type="password" autocomplete="off" width="150px"></input>
+                    </span>
+                    <span>
+                        <label id="errorLabel" runat="server"></label>    
+                    </span>
+                </fieldset>
+                <div id="actionButtons" runat="server">
+                    <input type="submit" value="Login" id="LoginButton" runat="server" />
+                </div>
+            </div>
+        </form>
+    </body>
+</html>
