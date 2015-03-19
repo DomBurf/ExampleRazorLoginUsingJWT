@@ -27,7 +27,7 @@
             /// <param name="passwordparam">Password</param>
             public void LoginButtonClick(string usernameparam, string passwordparam)
             {
-                if (this.AuthenticateUser(usernameparam, usernameparam))
+                if (this.AuthenticateUser(usernameparam, passwordparam)))
                 {
                     string token = this.CreateAuthenticationToken(usernameparam);
                     string returnUrl = @Request.QueryString["returnUrl"];
